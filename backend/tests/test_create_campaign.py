@@ -89,6 +89,42 @@ def test_create_campaign_alias_from_final_name(api_client: TestClient) -> None:
     assert fake.created_campaigns[0]["alias"] == "test_shvirev_my_campaign"
 
 
+def test_create_campaign_keitaro_payload_and_streams(api_client: TestClient) -> None:
+    fake = app.dependency_overrides[get_keitaro_client]()
+    assert isinstance(fake, FakeKeitaroClient)
+
+    response = api_client.post(
+        "/campaigns",
+        json={"name": "campaign1", "geo": "us", "offer_id": 77},
+    )
+
+    assert response.status_code == 201
+    assert response.json() == {"id": 1001}
+
+    campaign = fake.created_campaigns[0]
+    assert campaign["type"] == "position"
+    assert campaign["domain_id"] == 1813
+    assert campaign["group_id"] == "10332"
+    assert campaign["traffic_source_id"] == 836
+
+    assert len(fake.created_streams) == 2
+
+    geo_stream = fake.created_streams[0]
+    assert geo_stream["name"] == "geo"
+    assert geo_stream["schema"] == "redirect"
+    assert geo_stream["action_payload"] == "https://www.google.com"
+    assert geo_stream["filters"] == [
+        {"name": "country", "mode": "accept", "payload": ["US"]},
+    ]
+
+    offer_stream = fake.created_streams[1]
+    assert offer_stream["name"] == "offer"
+    assert offer_stream["schema"] == "landings"
+    assert offer_stream["offers"] == [
+        {"offer_id": 77, "share": 100, "state": "active"},
+    ]
+
+
 @pytest.mark.parametrize(
     ("settings_override", "fake_override", "payload", "detail_substring"),
     [
