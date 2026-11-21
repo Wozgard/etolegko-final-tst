@@ -1,1 +1,1 @@
-/** Placeholder for create-campaign feature. */
+export { CreateCampaignModal } from './CreateCampaignModal'
