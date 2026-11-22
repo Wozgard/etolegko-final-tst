@@ -1,4 +1,6 @@
 # Известные ловушки
 
 - `pytest` в backend печатает `StarletteDeprecationWarning`: TestClient на текущем Starlette просит пакет `httpx2` вместо `httpx`. Тест при этом зелёный. На `httpx2` не переходим, пока этого не потребует связка FastAPI и Starlette.
-- `backend/tests/test_weights.py` специально красный, пока нет `app.domain.weights`. Это не повод удалять тесты или ослаблять кейсы. Зелёным его делает реализация `distribute_shares`.
+- Повторный `pytest` редактора падает, если в `campaign_offers` остались строки прошлой сессии. Перед каждым тестом их чистит `backend/tests/conftest.py`. Не убирай эту очистку.
+- `KEITARO_MOCK=true` держит копию сида в памяти процесса. Перезапуск uvicorn возвращает данные к `backend/app/mocks/keitaro.json`. У гео-потока в сиде не должно быть ключа `offers`.
+- Поиск оффера внутри Popover нельзя выносить в портал. Клик по варианту снаружи закрывает окно на mousedown, и строка не добавляется. У Combobox на экране офферов стоит `withinPortal={false}`.

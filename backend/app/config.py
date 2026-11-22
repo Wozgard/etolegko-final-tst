@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     keitaro_group_id: int = 0
     keitaro_source_name: str = ""
     keitaro_source_id: int = 0
+    keitaro_mock: bool = False
 
 
 settings = Settings()

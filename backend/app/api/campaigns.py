@@ -1,15 +1,27 @@
-from typing import Annotated
+from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
+from sqlalchemy.orm import Session
 
-from app.api.deps import get_keitaro_client, get_settings
+from app.api.deps import get_db, get_keitaro_client, get_settings
 from app.config import Settings
 from app.domain.campaign import CAMPAIGN_NAME_PREFIX
-from app.schemas.campaign import CampaignListItem, CreateCampaignRequest, CreateCampaignResponse, OfferListItem
+from app.models import Base
+from app.db import engine
+from app.schemas.campaign import (
+    CampaignListItem,
+    CreateCampaignRequest,
+    CreateCampaignResponse,
+    OfferListItem,
+    PushCampaignOffersRequest,
+)
+from app.services.campaign_offers import list_campaign_streams_response, push_campaign_offers
 from app.services.create_campaign import CreateCampaignError, create_campaign
 from app.services.keitaro_client import KeitaroClient
 
 router = APIRouter()
+
+Base.metadata.create_all(bind=engine)
 
 
 @router.get("/offers", response_model=list[OfferListItem])
@@ -60,3 +72,32 @@ def post_create_campaign(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=exc.message) from exc
 
     return CreateCampaignResponse(id=campaign_id)
+
+
+@router.get("/campaigns/{campaign_id}/streams")
+def get_campaign_streams(
+    campaign_id: int,
+    keitaro: Annotated[KeitaroClient, Depends(get_keitaro_client)],
+    db: Annotated[Session, Depends(get_db)],
+) -> list[dict[str, Any]]:
+    return list_campaign_streams_response(keitaro, db, campaign_id)
+
+
+@router.post("/campaigns/{campaign_id}/push", status_code=status.HTTP_204_NO_CONTENT)
+def post_push_campaign_offers(
+    campaign_id: int,
+    body: PushCampaignOffersRequest,
+    keitaro: Annotated[KeitaroClient, Depends(get_keitaro_client)],
+    db: Annotated[Session, Depends(get_db)],
+) -> Response:
+    try:
+        push_campaign_offers(
+            keitaro,
+            db,
+            campaign_id,
+            [offer.model_dump() for offer in body.offers],
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

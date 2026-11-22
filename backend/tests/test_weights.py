@@ -38,9 +38,17 @@ def test_four_offers_25_each() -> None:
     assert _shares(distribute_shares(offers)) == [25, 25, 25, 25]
 
 
-def test_seven_offers_remainder_to_first() -> None:
+def test_seven_offers_remainder_spread_top_down() -> None:
     offers = [OfferShare(f"o{i}", 0) for i in range(7)]
-    assert _shares(distribute_shares(offers)) == [16, 14, 14, 14, 14, 14, 14]
+    assert _shares(distribute_shares(offers)) == [15, 15, 14, 14, 14, 14, 14]
+
+
+def test_pinned_77_four_free_6_6_6_5() -> None:
+    offers = [
+        OfferShare("pinned", 77, pinned=True),
+        *[OfferShare(f"o{i}", 0) for i in range(4)],
+    ]
+    assert _shares(distribute_shares(offers)) == [77, 6, 6, 6, 5]
 
 
 def test_pinned_50_two_others_25_25() -> None:
