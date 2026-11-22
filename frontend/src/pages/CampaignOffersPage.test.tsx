@@ -6,6 +6,7 @@ import { CampaignOffersPage } from './CampaignOffersPage'
 import { appTheme } from '../shared/theme'
 
 const CAMPAIGN_ID = '5'
+const CAMPAIGN_NAME = 'test_shvirev_campaign_five'
 
 const streamsPayload = [
   {
@@ -72,6 +73,18 @@ function createStreamsFetchMock(options: FetchMockOptions = {}) {
       })
     }
 
+    if (
+      href.includes('/campaigns') &&
+      init?.method !== 'POST' &&
+      !href.includes('/streams') &&
+      !href.includes('/push')
+    ) {
+      return Promise.resolve({
+        ok: true,
+        json: async () => [{ id: Number(CAMPAIGN_ID), name: CAMPAIGN_NAME }],
+      })
+    }
+
     return Promise.resolve({
       ok: true,
       json: async () => [],
@@ -94,6 +107,7 @@ function renderOffersPage(fetchMock = createStreamsFetchMock()) {
 }
 
 async function waitForOfferTable() {
+  await screen.findByRole('heading', { name: CAMPAIGN_NAME })
   await screen.findByRole('cell', { name: /Offer Alpha/ })
   await screen.findByRole('cell', { name: /Offer Beta/ })
   expect(screen.getAllByText('50%')).toHaveLength(2)
@@ -118,20 +132,20 @@ describe('CampaignOffersPage', () => {
     fireEvent.click(screen.getAllByRole('button', { name: 'Удалить' })[0])
 
     expect(
-      await screen.findByRole('button', { name: 'Bring Back' }),
+      await screen.findByRole('button', { name: 'Вернуть' }),
     ).toBeInTheDocument()
     expect(screen.getAllByRole('button', { name: 'Удалить' })).toHaveLength(1)
     expect(
-      screen.getByRole('button', { name: 'Push to Keitaro' }),
+      screen.getByRole('button', { name: 'В Keitaro' }),
     ).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Cancel' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Отмена' })).toBeInTheDocument()
 
     const dataRows = screen.getAllByRole('row').slice(1)
     const removedRow = dataRows[dataRows.length - 1]
     expect(removedRow).toHaveTextContent('Offer Alpha')
     expect(removedRow).toHaveTextContent('0%')
     expect(
-      within(removedRow).getByRole('button', { name: 'Bring Back' }),
+      within(removedRow).getByRole('button', { name: 'Вернуть' }),
     ).toBeInTheDocument()
     expect(
       within(removedRow).queryByRole('button', { name: 'Удалить' }),
@@ -151,15 +165,29 @@ describe('CampaignOffersPage', () => {
     await waitForOfferTable()
 
     fireEvent.click(screen.getAllByRole('button', { name: 'Удалить' })[0])
-    await screen.findByRole('button', { name: 'Cancel' })
+    await screen.findByRole('button', { name: 'Отмена' })
 
-    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Отмена' }))
 
     expect(
-      screen.queryByRole('button', { name: 'Push to Keitaro' }),
+      screen.queryByRole('button', { name: 'В Keitaro' }),
     ).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Cancel' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Отмена' })).not.toBeInTheDocument()
     expect(screen.getAllByRole('button', { name: 'Удалить' })).toHaveLength(2)
+    expect(screen.getAllByText('50%')).toHaveLength(2)
+  })
+
+  it('pin on even 50/50 shares does not show push actions', async () => {
+    const fetchMock = createStreamsFetchMock()
+    renderOffersPage(fetchMock)
+    await waitForOfferTable()
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Закрепить' })[0])
+
+    expect(
+      screen.queryByRole('button', { name: 'В Keitaro' }),
+    ).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Отмена' })).not.toBeInTheDocument()
     expect(screen.getAllByText('50%')).toHaveLength(2)
   })
 
@@ -172,7 +200,7 @@ describe('CampaignOffersPage', () => {
     renderOffersPage(fetchMock)
     await waitForOfferTable()
 
-    fireEvent.click(screen.getAllByRole('button', { name: 'Pin' })[0])
+    fireEvent.click(screen.getAllByRole('button', { name: 'Закрепить' })[0])
 
     fireEvent.click(screen.getByRole('button', { name: 'Добавить оффер' }))
 
@@ -198,24 +226,24 @@ describe('CampaignOffersPage', () => {
     await waitForOfferTable()
 
     fireEvent.click(screen.getAllByRole('button', { name: 'Удалить' })[0])
-    await screen.findByRole('button', { name: 'Push to Keitaro' })
+    await screen.findByRole('button', { name: 'В Keitaro' })
 
-    fireEvent.click(screen.getByRole('button', { name: 'Push to Keitaro' }))
+    fireEvent.click(screen.getByRole('button', { name: 'В Keitaro' }))
     await vi.waitFor(() => expect(countPushCalls(fetchMock)).toBe(1))
 
     expect(
-      screen.queryByRole('button', { name: 'Push to Keitaro' }),
+      screen.queryByRole('button', { name: 'В Keitaro' }),
     ).not.toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Bring Back' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Вернуть' }))
 
     expect(
-      screen.getByRole('button', { name: 'Push to Keitaro' }),
+      screen.getByRole('button', { name: 'В Keitaro' }),
     ).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Cancel' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Отмена' })).toBeInTheDocument()
     expect(countPushCalls(fetchMock)).toBe(1)
 
-    fireEvent.click(screen.getByRole('button', { name: 'Push to Keitaro' }))
+    fireEvent.click(screen.getByRole('button', { name: 'В Keitaro' }))
     await vi.waitFor(() => expect(countPushCalls(fetchMock)).toBe(2))
   })
 })

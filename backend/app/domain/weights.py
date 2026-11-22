@@ -21,7 +21,7 @@ def distribute_shares(offers: list[OfferShare]) -> list[OfferShare]:
     if eligible:
         base, extra = divmod(remainder, len(eligible))
         for j, idx in enumerate(eligible):
-            distributed[idx] = base + extra if j == 0 else base
+            distributed[idx] = base + (1 if j < extra else 0)
 
     result: list[OfferShare] = []
     for i, o in enumerate(offers):

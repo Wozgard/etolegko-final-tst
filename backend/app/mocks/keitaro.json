@@ -1,0 +1,447 @@
+{
+  "domains": [
+    {
+      "id": 1813,
+      "name": "kylovoa.com"
+    }
+  ],
+  "groups": [
+    {
+      "id": 10332,
+      "name": "FORTESTS",
+      "type": "campaigns"
+    }
+  ],
+  "traffic_source": {
+    "id": 836,
+    "name": "FORTESTS"
+  },
+  "offers": [
+    {
+      "id": 11,
+      "name": "Offer 11"
+    },
+    {
+      "id": 12,
+      "name": "Offer 12"
+    },
+    {
+      "id": 13,
+      "name": "Offer 13"
+    },
+    {
+      "id": 14,
+      "name": "Offer 14"
+    },
+    {
+      "id": 15,
+      "name": "Offer 15"
+    },
+    {
+      "id": 16,
+      "name": "Offer 16"
+    },
+    {
+      "id": 17,
+      "name": "Offer 17"
+    },
+    {
+      "id": 18,
+      "name": "Offer 18"
+    },
+    {
+      "id": 19,
+      "name": "Offer 19"
+    },
+    {
+      "id": 20,
+      "name": "Offer 20"
+    },
+    {
+      "id": 21,
+      "name": "Offer 21"
+    },
+    {
+      "id": 22,
+      "name": "Offer 22"
+    },
+    {
+      "id": 23,
+      "name": "Offer 23"
+    },
+    {
+      "id": 24,
+      "name": "Offer 24"
+    },
+    {
+      "id": 25,
+      "name": "Offer 25"
+    },
+    {
+      "id": 26,
+      "name": "Offer 26"
+    },
+    {
+      "id": 27,
+      "name": "Offer 27"
+    },
+    {
+      "id": 28,
+      "name": "Offer 28"
+    },
+    {
+      "id": 29,
+      "name": "Offer 29"
+    },
+    {
+      "id": 30,
+      "name": "Offer 30"
+    },
+    {
+      "id": 31,
+      "name": "Offer 31"
+    },
+    {
+      "id": 32,
+      "name": "Offer 32"
+    },
+    {
+      "id": 33,
+      "name": "Offer 33"
+    },
+    {
+      "id": 34,
+      "name": "Offer 34"
+    },
+    {
+      "id": 35,
+      "name": "Offer 35"
+    },
+    {
+      "id": 36,
+      "name": "Offer 36"
+    },
+    {
+      "id": 37,
+      "name": "Offer 37"
+    },
+    {
+      "id": 38,
+      "name": "Offer 38"
+    },
+    {
+      "id": 39,
+      "name": "Offer 39"
+    },
+    {
+      "id": 40,
+      "name": "Offer 40"
+    },
+    {
+      "id": 41,
+      "name": "Offer 41"
+    },
+    {
+      "id": 42,
+      "name": "Offer 42"
+    },
+    {
+      "id": 43,
+      "name": "Offer 43"
+    },
+    {
+      "id": 44,
+      "name": "Offer 44"
+    },
+    {
+      "id": 45,
+      "name": "Offer 45"
+    },
+    {
+      "id": 46,
+      "name": "Offer 46"
+    },
+    {
+      "id": 47,
+      "name": "Offer 47"
+    },
+    {
+      "id": 48,
+      "name": "Offer 48"
+    },
+    {
+      "id": 49,
+      "name": "Offer 49"
+    },
+    {
+      "id": 50,
+      "name": "Offer 50"
+    },
+    {
+      "id": 51,
+      "name": "Offer 51"
+    },
+    {
+      "id": 52,
+      "name": "Offer 52"
+    },
+    {
+      "id": 53,
+      "name": "Offer 53"
+    },
+    {
+      "id": 54,
+      "name": "Offer 54"
+    },
+    {
+      "id": 55,
+      "name": "Offer 55"
+    },
+    {
+      "id": 56,
+      "name": "Offer 56"
+    },
+    {
+      "id": 57,
+      "name": "Offer 57"
+    },
+    {
+      "id": 58,
+      "name": "Offer 58"
+    },
+    {
+      "id": 59,
+      "name": "Offer 59"
+    },
+    {
+      "id": 60,
+      "name": "Offer 60"
+    },
+    {
+      "id": 61,
+      "name": "Offer 61"
+    },
+    {
+      "id": 62,
+      "name": "Offer 62"
+    },
+    {
+      "id": 63,
+      "name": "Offer 63"
+    },
+    {
+      "id": 64,
+      "name": "Offer 64"
+    },
+    {
+      "id": 65,
+      "name": "Offer 65"
+    },
+    {
+      "id": 66,
+      "name": "Offer 66"
+    },
+    {
+      "id": 67,
+      "name": "Offer 67"
+    },
+    {
+      "id": 68,
+      "name": "Offer 68"
+    },
+    {
+      "id": 69,
+      "name": "Offer 69"
+    },
+    {
+      "id": 70,
+      "name": "Offer 70"
+    },
+    {
+      "id": 71,
+      "name": "Offer 71"
+    },
+    {
+      "id": 72,
+      "name": "Offer 72"
+    },
+    {
+      "id": 73,
+      "name": "Offer 73"
+    },
+    {
+      "id": 74,
+      "name": "Offer 74"
+    },
+    {
+      "id": 75,
+      "name": "Offer 75"
+    },
+    {
+      "id": 76,
+      "name": "Offer 76"
+    },
+    {
+      "id": 77,
+      "name": "Alpha Offer"
+    },
+    {
+      "id": 78,
+      "name": "Offer 78"
+    },
+    {
+      "id": 79,
+      "name": "Offer 79"
+    },
+    {
+      "id": 80,
+      "name": "Offer 80"
+    },
+    {
+      "id": 81,
+      "name": "Offer 81"
+    },
+    {
+      "id": 82,
+      "name": "Offer 82"
+    },
+    {
+      "id": 83,
+      "name": "Offer 83"
+    },
+    {
+      "id": 84,
+      "name": "Offer 84"
+    },
+    {
+      "id": 85,
+      "name": "Offer 85"
+    },
+    {
+      "id": 86,
+      "name": "Offer 86"
+    },
+    {
+      "id": 87,
+      "name": "Offer 87"
+    },
+    {
+      "id": 88,
+      "name": "Beta Offer"
+    },
+    {
+      "id": 89,
+      "name": "Offer 89"
+    },
+    {
+      "id": 90,
+      "name": "Offer 90"
+    },
+    {
+      "id": 91,
+      "name": "Offer 91"
+    },
+    {
+      "id": 92,
+      "name": "Offer 92"
+    },
+    {
+      "id": 93,
+      "name": "Offer 93"
+    },
+    {
+      "id": 94,
+      "name": "Offer 94"
+    },
+    {
+      "id": 95,
+      "name": "Offer 95"
+    },
+    {
+      "id": 96,
+      "name": "Offer 96"
+    },
+    {
+      "id": 97,
+      "name": "Offer 97"
+    },
+    {
+      "id": 98,
+      "name": "Offer 98"
+    },
+    {
+      "id": 99,
+      "name": "Gamma Offer"
+    }
+  ],
+  "campaigns": [
+    {
+      "id": 10,
+      "name": "test_shvirev_alpha"
+    },
+    {
+      "id": 20,
+      "name": "test_shvirev_beta"
+    },
+    {
+      "id": 30,
+      "name": "other_campaign"
+    }
+  ],
+  "streams_by_campaign": {
+    "10": [
+      {
+        "id": 101,
+        "campaign_id": 10,
+        "type": "regular",
+        "position": 1,
+        "name": "geo",
+        "schema": "redirect",
+        "action_type": "http"
+      },
+      {
+        "id": 102,
+        "campaign_id": 10,
+        "type": "regular",
+        "position": 2,
+        "name": "offer",
+        "schema": "landings",
+        "action_type": "http",
+        "offers": [
+          {
+            "offer_id": 77,
+            "share": 100,
+            "state": "active"
+          }
+        ]
+      }
+    ],
+    "20": [
+      {
+        "id": 201,
+        "campaign_id": 20,
+        "type": "regular",
+        "position": 1,
+        "name": "geo",
+        "schema": "redirect",
+        "action_type": "http"
+      },
+      {
+        "id": 202,
+        "campaign_id": 20,
+        "type": "regular",
+        "position": 2,
+        "name": "offer",
+        "schema": "landings",
+        "action_type": "http",
+        "offers": [
+          {
+            "offer_id": 88,
+            "share": 100,
+            "state": "active"
+          }
+        ]
+      }
+    ]
+  }
+}

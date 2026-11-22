@@ -5,6 +5,7 @@ import {
   Group,
   Loader,
   Paper,
+  Popover,
   Stack,
   Table,
   Text,
@@ -12,6 +13,7 @@ import {
   Title,
   useCombobox,
 } from '@mantine/core'
+import { IconArrowUp, IconPin } from '@tabler/icons-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import {
@@ -40,6 +42,18 @@ type OfferListItem = {
   name: string
 }
 
+type CampaignListItem = {
+  id: number
+  name: string
+}
+
+type OfferSnapshot = {
+  id: number
+  name: string
+  share: number
+  removed: boolean
+}
+
 const DIRTY_TABLE_BG = '#C5DFE9'
 
 function cloneOffers(offers: EditableOffer[]): EditableOffer[] {
@@ -56,6 +70,28 @@ function toEditable(offers: StreamOfferApi[]): EditableOffer[] {
   }))
 }
 
+function snapshotIgnoringPin(offers: EditableOffer[]): OfferSnapshot[] {
+  return offers.map(({ id, name, share, removed }) => ({
+    id,
+    name,
+    share,
+    removed,
+  }))
+}
+
+function snapshotsEqual(a: OfferSnapshot[], b: OfferSnapshot[]): boolean {
+  if (a.length !== b.length) {
+    return false
+  }
+  return a.every(
+    (item, i) =>
+      item.id === b[i].id &&
+      item.name === b[i].name &&
+      item.share === b[i].share &&
+      item.removed === b[i].removed,
+  )
+}
+
 function formatOfferOption(offer: OfferListItem): string {
   return `${offer.id} — ${offer.name}`
 }
@@ -68,7 +104,8 @@ export function CampaignOffersPage() {
   const { id } = useParams<{ id: string }>()
   const campaignId = id ?? ''
 
-  const [emptyStreamNames, setEmptyStreamNames] = useState<string[]>([])
+  const [campaignTitle, setCampaignTitle] = useState(campaignId)
+  const [streams, setStreams] = useState<StreamApi[]>([])
   const [offers, setOffers] = useState<EditableOffer[]>([])
   const [baseline, setBaseline] = useState<EditableOffer[]>([])
   const [dirty, setDirty] = useState(false)
@@ -104,36 +141,45 @@ export function CampaignOffersPage() {
     setLoadError(null)
 
     try {
-      const response = await apiClient(`/campaigns/${campaignId}/streams`)
-      if (!response.ok) {
+      const [campaignsResponse, streamsResponse] = await Promise.all([
+        apiClient('/campaigns'),
+        apiClient(`/campaigns/${campaignId}/streams`),
+      ])
+
+      if (campaignsResponse.ok) {
+        const campaigns: CampaignListItem[] = await campaignsResponse.json()
+        const found = campaigns.find((c) => String(c.id) === campaignId)
+        setCampaignTitle(found?.name ?? campaignId)
+      } else {
+        setCampaignTitle(campaignId)
+      }
+
+      if (!streamsResponse.ok) {
         setLoadError('Не удалось загрузить потоки кампании')
-        setEmptyStreamNames([])
+        setStreams([])
         setOffers([])
         setBaseline([])
         setDirty(false)
         return
       }
 
-      const streams: StreamApi[] = await response.json()
-      const emptyNames: string[] = []
+      const streamList: StreamApi[] = await streamsResponse.json()
       let tableOffers: EditableOffer[] = []
 
-      for (const stream of streams) {
+      for (const stream of streamList) {
         if (isOfferStream(stream)) {
           tableOffers = toEditable(stream.offers!)
-        } else {
-          emptyNames.push(stream.name)
         }
       }
 
       const sorted = sortOffers(tableOffers)
-      setEmptyStreamNames(emptyNames)
+      setStreams(streamList)
       setOffers(sorted)
       setBaseline(cloneOffers(sorted))
       setDirty(false)
     } catch {
       setLoadError('Не удалось загрузить потоки кампании')
-      setEmptyStreamNames([])
+      setStreams([])
       setOffers([])
       setBaseline([])
       setDirty(false)
@@ -161,6 +207,19 @@ export function CampaignOffersPage() {
     syncOfferInput('')
     setSearchResults([])
     combobox.closeDropdown()
+  }
+
+  const closeAddOfferPopover = () => {
+    resetAddOffer()
+    setAddingOffer(false)
+  }
+
+  const toggleAddOfferPopover = () => {
+    if (addingOffer) {
+      closeAddOfferPopover()
+    } else {
+      setAddingOffer(true)
+    }
   }
 
   useEffect(() => {
@@ -262,8 +321,7 @@ export function CampaignOffersPage() {
     }
 
     if (offers.some((o) => o.id === found.id)) {
-      resetAddOffer()
-      setAddingOffer(false)
+      closeAddOfferPopover()
       return
     }
 
@@ -281,8 +339,7 @@ export function CampaignOffersPage() {
     )
 
     applyOffers(next, true)
-    resetAddOffer()
-    setAddingOffer(false)
+    closeAddOfferPopover()
   }
 
   const handleRemove = (offerId: number) => {
@@ -308,18 +365,31 @@ export function CampaignOffersPage() {
   }
 
   const handlePin = (offerId: number) => {
-    const next = distributeShares(
-      offers.map((o) =>
-        o.id === offerId ? { ...o, pinned: !o.pinned } : o,
+    const before = snapshotIgnoringPin(offers)
+    const next = sortOffers(
+      distributeShares(
+        offers.map((o) =>
+          o.id === offerId ? { ...o, pinned: !o.pinned } : o,
+        ),
       ),
     )
+    const after = snapshotIgnoringPin(next)
+
+    if (snapshotsEqual(before, after)) {
+      setOffers(next)
+      if (!dirty) {
+        setBaseline(cloneOffers(next))
+        setDirty(false)
+      }
+      return
+    }
+
     applyOffers(next, true)
   }
 
   const handleCancel = () => {
     applyOffers(cloneOffers(baseline), false)
-    setAddingOffer(false)
-    resetAddOffer()
+    closeAddOfferPopover()
   }
 
   const handlePush = async () => {
@@ -363,6 +433,91 @@ export function CampaignOffersPage() {
     }
   }
 
+  const renderOfferTable = () => (
+    <Paper
+      radius="md"
+      p="sm"
+      style={{
+        backgroundColor: dirty ? DIRTY_TABLE_BG : 'transparent',
+        transition: 'background-color 0.15s ease',
+      }}
+    >
+      <Table
+        verticalSpacing="sm"
+        styles={{
+          table: { borderCollapse: 'separate', borderSpacing: 0 },
+          th: {
+            color: palette.textSecondary,
+            fontWeight: 500,
+            borderBottom: `1px solid ${palette.border}`,
+          },
+          td: {
+            borderBottom: `1px solid ${palette.border}`,
+          },
+        }}
+      >
+        <Table.Thead>
+          <Table.Tr>
+            <Table.Th>Оффер</Table.Th>
+            <Table.Th>Доля</Table.Th>
+            <Table.Th>Действия</Table.Th>
+          </Table.Tr>
+        </Table.Thead>
+        <Table.Tbody>
+          {offers.map((offer) => (
+            <Table.Tr key={offer.id}>
+              <Table.Td>
+                <Text
+                  c={offer.removed ? palette.textSecondary : palette.text}
+                >
+                  {offer.name}
+                </Text>
+              </Table.Td>
+              <Table.Td>
+                <Text c={offer.removed ? palette.textSecondary : palette.text}>
+                  {offer.share}%
+                </Text>
+              </Table.Td>
+              <Table.Td>
+                <Group gap="xs">
+                  {offer.removed ? (
+                    <Button
+                      size="compact-sm"
+                      variant="light"
+                      onClick={() => handleBringBack(offer.id)}
+                    >
+                      Вернуть
+                    </Button>
+                  ) : (
+                    <>
+                      <Button
+                        size="compact-sm"
+                        variant="light"
+                        color="red"
+                        onClick={() => handleRemove(offer.id)}
+                      >
+                        Удалить
+                      </Button>
+                      <Button
+                        size="compact-sm"
+                        variant={offer.pinned ? 'filled' : 'light'}
+                        color="brand"
+                        aria-label={offer.pinned ? 'Открепить' : 'Закрепить'}
+                        onClick={() => handlePin(offer.id)}
+                      >
+                        <IconPin size={16} aria-hidden />
+                      </Button>
+                    </>
+                  )}
+                </Group>
+              </Table.Td>
+            </Table.Tr>
+          ))}
+        </Table.Tbody>
+      </Table>
+    </Paper>
+  )
+
   return (
     <Box
       mih="100vh"
@@ -380,7 +535,7 @@ export function CampaignOffersPage() {
       >
         <Stack gap="lg">
           <Title order={1} c={palette.text}>
-            Офферы кампании {campaignId}
+            {campaignTitle}
           </Title>
 
           {loadError ? (
@@ -389,164 +544,148 @@ export function CampaignOffersPage() {
             </Text>
           ) : null}
 
-          {emptyStreamNames.map((name) => (
-            <Text key={name} size="sm" c={palette.textSecondary}>
-              Поток: {name}
-            </Text>
-          ))}
-
-          {!loading && dirty && !pushInFlight ? (
-            <Group gap="sm">
-              <Button color="brand" onClick={() => void handlePush()}>
-                Push to Keitaro
-              </Button>
-              <Button variant="default" onClick={handleCancel}>
-                Cancel
-              </Button>
-            </Group>
-          ) : null}
-
-          <Paper
-            radius="md"
-            p="sm"
-            style={{
-              backgroundColor: dirty ? DIRTY_TABLE_BG : 'transparent',
-              transition: 'background-color 0.15s ease',
-            }}
-          >
-            <Table
-              verticalSpacing="sm"
-              styles={{
-                table: { borderCollapse: 'separate', borderSpacing: 0 },
-                th: {
-                  color: palette.textSecondary,
-                  fontWeight: 500,
-                  borderBottom: `1px solid ${palette.border}`,
-                },
-                td: {
-                  borderBottom: `1px solid ${palette.border}`,
-                },
-              }}
-            >
-              <Table.Thead>
-                <Table.Tr>
-                  <Table.Th>Оффер</Table.Th>
-                  <Table.Th>Доля</Table.Th>
-                  <Table.Th>Действия</Table.Th>
-                </Table.Tr>
-              </Table.Thead>
-              <Table.Tbody>
-                {offers.map((offer) => (
-                  <Table.Tr key={offer.id}>
-                    <Table.Td>
-                      <Text
-                        c={offer.removed ? palette.textSecondary : palette.text}
-                      >
-                        {offer.name}
-                      </Text>
-                    </Table.Td>
-                    <Table.Td>
-                      <Text c={offer.removed ? palette.textSecondary : palette.text}>
-                        {offer.share}%
-                      </Text>
-                    </Table.Td>
-                    <Table.Td>
-                      <Group gap="xs">
-                        {offer.removed ? (
-                          <Button
-                            size="compact-sm"
-                            variant="light"
-                            onClick={() => handleBringBack(offer.id)}
-                          >
-                            Bring Back
-                          </Button>
-                        ) : (
-                          <>
+          {!loading
+            ? streams.map((stream) =>
+                isOfferStream(stream) ? (
+                  <Paper
+                    key={stream.name}
+                    radius="md"
+                    p="lg"
+                    style={{ border: `1px solid ${palette.border}` }}
+                  >
+                    <Stack gap="md">
+                      <Group justify="space-between" align="center" wrap="wrap">
+                        <Text fw={600} c={palette.text}>
+                          Поток {stream.name}
+                        </Text>
+                        <Popover
+                          opened={addingOffer}
+                          onChange={(opened) => {
+                            if (!opened) {
+                              closeAddOfferPopover()
+                            } else {
+                              setAddingOffer(true)
+                            }
+                          }}
+                          position="bottom-end"
+                          closeOnEscape
+                        >
+                          <Popover.Target>
                             <Button
-                              size="compact-sm"
                               variant="light"
-                              color="red"
-                              onClick={() => handleRemove(offer.id)}
-                            >
-                              Удалить
-                            </Button>
-                            <Button
-                              size="compact-sm"
-                              variant={offer.pinned ? 'filled' : 'light'}
                               color="brand"
-                              onClick={() => handlePin(offer.id)}
+                              onClick={toggleAddOfferPopover}
                             >
-                              Pin
+                              Добавить оффер
                             </Button>
-                          </>
-                        )}
+                          </Popover.Target>
+                          <Popover.Dropdown
+                            styles={{
+                              dropdown: { borderColor: palette.border },
+                            }}
+                          >
+                            <Combobox
+                              store={combobox}
+                              withinPortal={false}
+                              position="bottom-start"
+                              onOptionSubmit={handleOfferSelect}
+                            >
+                              <Combobox.Target>
+                                <TextInput
+                                  label="ID оффера"
+                                  placeholder="77"
+                                  value={offerInput}
+                                  onChange={(event) =>
+                                    handleOfferInputChange(
+                                      event.currentTarget.value,
+                                    )
+                                  }
+                                  onClick={() => {
+                                    if (searchResults.length > 0) {
+                                      combobox.openDropdown()
+                                    }
+                                  }}
+                                  onFocus={() => {
+                                    if (searchResults.length > 0) {
+                                      combobox.openDropdown()
+                                    }
+                                  }}
+                                  inputMode="numeric"
+                                  rightSection={
+                                    searchLoading ? <Loader size="xs" /> : null
+                                  }
+                                  styles={{
+                                    label: { color: palette.textSecondary },
+                                  }}
+                                />
+                              </Combobox.Target>
+
+                              <Combobox.Dropdown
+                                styles={{
+                                  dropdown: { borderColor: palette.border },
+                                }}
+                              >
+                                <Combobox.Options
+                                  style={{ maxHeight: 240, overflowY: 'auto' }}
+                                >
+                                  {searchResults.map((item) => (
+                                    <Combobox.Option
+                                      key={item.id}
+                                      value={String(item.id)}
+                                    >
+                                      {formatOfferOption(item)}
+                                    </Combobox.Option>
+                                  ))}
+                                </Combobox.Options>
+                              </Combobox.Dropdown>
+                            </Combobox>
+                          </Popover.Dropdown>
+                        </Popover>
                       </Group>
-                    </Table.Td>
-                  </Table.Tr>
-                ))}
-              </Table.Tbody>
-            </Table>
-          </Paper>
 
-          <Stack gap="sm">
-            <Button
-              variant="light"
-              color="brand"
-              onClick={() => {
-                setAddingOffer(true)
-              }}
-            >
-              Добавить оффер
-            </Button>
+                      <Text size="sm" c={palette.textSecondary}>
+                        Редактируется только этот поток
+                      </Text>
 
-            {addingOffer ? (
-              <Combobox
-                store={combobox}
-                position="bottom-start"
-                onOptionSubmit={handleOfferSelect}
-              >
-                <Combobox.Target>
-                  <TextInput
-                    label="ID оффера"
-                    placeholder="77"
-                    value={offerInput}
-                    onChange={(event) =>
-                      handleOfferInputChange(event.currentTarget.value)
-                    }
-                    onClick={() => {
-                      if (searchResults.length > 0) {
-                        combobox.openDropdown()
-                      }
-                    }}
-                    onFocus={() => {
-                      if (searchResults.length > 0) {
-                        combobox.openDropdown()
-                      }
-                    }}
-                    inputMode="numeric"
-                    rightSection={
-                      searchLoading ? <Loader size="xs" /> : null
-                    }
-                    styles={{ label: { color: palette.textSecondary } }}
-                  />
-                </Combobox.Target>
+                      {renderOfferTable()}
 
-                <Combobox.Dropdown
-                  styles={{
-                    dropdown: { borderColor: palette.border },
-                  }}
-                >
-                  <Combobox.Options style={{ maxHeight: 240, overflowY: 'auto' }}>
-                    {searchResults.map((item) => (
-                      <Combobox.Option key={item.id} value={String(item.id)}>
-                        {formatOfferOption(item)}
-                      </Combobox.Option>
-                    ))}
-                  </Combobox.Options>
-                </Combobox.Dropdown>
-              </Combobox>
-            ) : null}
-          </Stack>
+                      {!pushInFlight && dirty ? (
+                        <Group gap="sm">
+                          <Button
+                            color="brand"
+                            leftSection={
+                              <IconArrowUp size={16} aria-hidden />
+                            }
+                            onClick={() => void handlePush()}
+                          >
+                            В Keitaro
+                          </Button>
+                          <Button variant="default" onClick={handleCancel}>
+                            Отмена
+                          </Button>
+                        </Group>
+                      ) : null}
+                    </Stack>
+                  </Paper>
+                ) : (
+                  <Paper
+                    key={stream.name}
+                    radius="md"
+                    p="lg"
+                    style={{ border: `1px solid ${palette.border}` }}
+                  >
+                    <Stack gap="xs">
+                      <Text fw={600} c={palette.text}>
+                        Поток {stream.name}
+                      </Text>
+                      <Text size="sm" c={palette.textSecondary}>
+                        Только просмотр
+                      </Text>
+                    </Stack>
+                  </Paper>
+                ),
+              )
+            : null}
         </Stack>
       </Paper>
     </Box>

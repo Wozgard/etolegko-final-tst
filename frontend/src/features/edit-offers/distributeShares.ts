@@ -26,7 +26,7 @@ export function distributeShares(offers: EditableOffer[]): EditableOffer[] {
     const base = Math.floor(remainder / eligible.length)
     const extra = remainder % eligible.length
     eligible.forEach((idx, j) => {
-      distributed[idx] = base + (j === 0 ? extra : 0)
+      distributed[idx] = base + (j < extra ? 1 : 0)
     })
   }
 

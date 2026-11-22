@@ -50,12 +50,37 @@ describe('CampaignListPage', () => {
   it('renders two campaigns in table rows and opens campaign on row click', async () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn().mockResolvedValue({
-        ok: true,
-        json: async () => [
-          { id: 10, name: 'test_shvirev_alpha' },
-          { id: 20, name: 'test_shvirev_beta' },
-        ],
+      vi.fn((input: string | URL | Request, init?: RequestInit) => {
+        const href =
+          typeof input === 'string'
+            ? input
+            : input instanceof URL
+              ? input.href
+              : input.url
+
+        if (
+          href.includes('/campaigns/10/streams') &&
+          init?.method !== 'POST'
+        ) {
+          return Promise.resolve({
+            ok: true,
+            json: async () => [
+              { name: 'geo', offers: [] },
+              {
+                name: 'offer',
+                offers: [{ id: 77, name: 'Offer Alpha', share: 100 }],
+              },
+            ],
+          })
+        }
+
+        return Promise.resolve({
+          ok: true,
+          json: async () => [
+            { id: 10, name: 'test_shvirev_alpha' },
+            { id: 20, name: 'test_shvirev_beta' },
+          ],
+        })
       }),
     )
 
@@ -85,7 +110,7 @@ describe('CampaignListPage', () => {
     fireEvent.click(rows[1])
 
     expect(
-      await screen.findByRole('heading', { name: 'Офферы кампании 10' }),
+      await screen.findByRole('heading', { name: 'test_shvirev_alpha' }),
     ).toBeInTheDocument()
   })
 
