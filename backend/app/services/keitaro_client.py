@@ -22,6 +22,10 @@ class KeitaroClient(Protocol):
 
     def create_stream(self, payload: dict[str, Any]) -> dict[str, Any]: ...
 
+    def list_campaign_streams(self, campaign_id: int) -> list[dict[str, Any]]: ...
+
+    def update_stream(self, stream_id: int, payload: dict[str, Any]) -> dict[str, Any]: ...
+
 
 class HttpxKeitaroClient:
     def __init__(self, api_url: str, api_key: str, client: httpx.Client | None = None) -> None:
@@ -36,6 +40,15 @@ class HttpxKeitaroClient:
 
     def _post(self, path: str, payload: dict[str, Any]) -> Any:
         response = self._client.post(
+            f"{self._base_url}{path}",
+            headers=self._headers,
+            json=payload,
+        )
+        response.raise_for_status()
+        return response.json()
+
+    def _put(self, path: str, payload: dict[str, Any]) -> Any:
+        response = self._client.put(
             f"{self._base_url}{path}",
             headers=self._headers,
             json=payload,
@@ -80,3 +93,10 @@ class HttpxKeitaroClient:
 
     def create_stream(self, payload: dict[str, Any]) -> dict[str, Any]:
         return self._post("/streams", payload)
+
+    def list_campaign_streams(self, campaign_id: int) -> list[dict[str, Any]]:
+        data = self._get(f"/campaigns/{campaign_id}/streams")
+        return data if isinstance(data, list) else []
+
+    def update_stream(self, stream_id: int, payload: dict[str, Any]) -> dict[str, Any]:
+        return self._put(f"/streams/{stream_id}", payload)

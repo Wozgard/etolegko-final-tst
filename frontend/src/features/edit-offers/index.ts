@@ -1,1 +1,5 @@
-/** Placeholder for edit-offers feature. */
+export {
+  distributeShares,
+  sortOffers,
+  type EditableOffer,
+} from './distributeShares'

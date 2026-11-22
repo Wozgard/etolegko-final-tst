@@ -19,3 +19,14 @@ class CampaignListItem(BaseModel):
 class OfferListItem(BaseModel):
     id: int
     name: str
+
+
+class PushOfferItem(BaseModel):
+    id: int = Field(gt=0)
+    removed: bool = False
+    pinned: bool = False
+    share: int | None = None
+
+
+class PushCampaignOffersRequest(BaseModel):
+    offers: list[PushOfferItem] = Field(min_length=1)
