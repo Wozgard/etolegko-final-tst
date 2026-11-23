@@ -3,8 +3,8 @@ import {
   Button,
   Combobox,
   Group,
+  Anchor,
   Loader,
-  Paper,
   Popover,
   Stack,
   Table,
@@ -13,9 +13,9 @@ import {
   Title,
   useCombobox,
 } from '@mantine/core'
-import { IconArrowUp, IconPin } from '@tabler/icons-react'
+import { IconArrowBackUp, IconArrowLeft, IconArrowUp, IconPin, IconTrash } from '@tabler/icons-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import {
   distributeShares,
   sortOffers,
@@ -113,6 +113,7 @@ export function CampaignOffersPage() {
   const [loadError, setLoadError] = useState<string | null>(null)
   const [addingOffer, setAddingOffer] = useState(false)
   const [pushInFlight, setPushInFlight] = useState(false)
+  const [backLinkHover, setBackLinkHover] = useState(false)
 
   const combobox = useCombobox({
     onDropdownClose: () => combobox.resetSelectedOption(),
@@ -434,9 +435,7 @@ export function CampaignOffersPage() {
   }
 
   const renderOfferTable = () => (
-    <Paper
-      radius="md"
-      p="sm"
+    <Box
       style={{
         backgroundColor: dirty ? DIRTY_TABLE_BG : 'transparent',
         transition: 'background-color 0.15s ease',
@@ -484,6 +483,7 @@ export function CampaignOffersPage() {
                     <Button
                       size="compact-sm"
                       variant="light"
+                      leftSection={<IconArrowBackUp size={14} aria-hidden />}
                       onClick={() => handleBringBack(offer.id)}
                     >
                       Вернуть
@@ -494,6 +494,7 @@ export function CampaignOffersPage() {
                         size="compact-sm"
                         variant="light"
                         color="red"
+                        leftSection={<IconTrash size={14} aria-hidden />}
                         onClick={() => handleRemove(offer.id)}
                       >
                         Удалить
@@ -515,7 +516,7 @@ export function CampaignOffersPage() {
           ))}
         </Table.Tbody>
       </Table>
-    </Paper>
+    </Box>
   )
 
   return (
@@ -525,18 +526,35 @@ export function CampaignOffersPage() {
       px="md"
       style={{ backgroundColor: palette.pageBg }}
     >
-      <Paper
-        radius="lg"
-        p="xl"
-        maw={920}
-        mx="auto"
-        shadow="sm"
-        style={{ border: `1px solid ${palette.border}` }}
-      >
+      <Box maw={960} mx="auto">
         <Stack gap="lg">
-          <Title order={1} c={palette.text}>
-            {campaignTitle}
-          </Title>
+          <Stack gap={4}>
+            <Anchor
+              component={Link}
+              to="/"
+              size="sm"
+              c={palette.primary}
+              underline="never"
+              w="fit-content"
+              onMouseEnter={() => setBackLinkHover(true)}
+              onMouseLeave={() => setBackLinkHover(false)}
+              style={{
+                alignSelf: 'flex-start',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 4,
+                borderBottom: `1px solid ${backLinkHover ? palette.primary : 'transparent'}`,
+              }}
+            >
+              <IconArrowLeft size={14} aria-hidden />
+              Компании
+            </Anchor>
+            <Title order={1} c={palette.text}>
+              {campaignTitle}
+            </Title>
+          </Stack>
+
+          <Box style={{ borderBottom: `1px solid ${palette.border}` }} />
 
           {loadError ? (
             <Text size="sm" c="red">
@@ -547,105 +565,99 @@ export function CampaignOffersPage() {
           {!loading
             ? streams.map((stream) =>
                 isOfferStream(stream) ? (
-                  <Paper
-                    key={stream.name}
-                    radius="md"
-                    p="lg"
-                    style={{ border: `1px solid ${palette.border}` }}
-                  >
-                    <Stack gap="md">
-                      <Group justify="space-between" align="center" wrap="wrap">
-                        <Text fw={600} c={palette.text}>
-                          Поток {stream.name}
-                        </Text>
-                        <Popover
-                          opened={addingOffer}
-                          onChange={(opened) => {
-                            if (!opened) {
-                              closeAddOfferPopover()
-                            } else {
-                              setAddingOffer(true)
-                            }
-                          }}
-                          position="bottom-end"
-                          closeOnEscape
-                        >
-                          <Popover.Target>
-                            <Button
-                              variant="light"
-                              color="brand"
-                              onClick={toggleAddOfferPopover}
-                            >
-                              Добавить оффер
-                            </Button>
-                          </Popover.Target>
-                          <Popover.Dropdown
-                            styles={{
-                              dropdown: { borderColor: palette.border },
-                            }}
-                          >
-                            <Combobox
-                              store={combobox}
-                              withinPortal={false}
-                              position="bottom-start"
-                              onOptionSubmit={handleOfferSelect}
-                            >
-                              <Combobox.Target>
-                                <TextInput
-                                  label="ID оффера"
-                                  placeholder="77"
-                                  value={offerInput}
-                                  onChange={(event) =>
-                                    handleOfferInputChange(
-                                      event.currentTarget.value,
-                                    )
-                                  }
-                                  onClick={() => {
-                                    if (searchResults.length > 0) {
-                                      combobox.openDropdown()
-                                    }
-                                  }}
-                                  onFocus={() => {
-                                    if (searchResults.length > 0) {
-                                      combobox.openDropdown()
-                                    }
-                                  }}
-                                  inputMode="numeric"
-                                  rightSection={
-                                    searchLoading ? <Loader size="xs" /> : null
-                                  }
-                                  styles={{
-                                    label: { color: palette.textSecondary },
-                                  }}
-                                />
-                              </Combobox.Target>
+                  <Stack key={stream.name} gap="md">
+                    <Text fw={600} c={palette.text}>
+                      Поток {stream.name}
+                    </Text>
 
-                              <Combobox.Dropdown
-                                styles={{
-                                  dropdown: { borderColor: palette.border },
-                                }}
-                              >
-                                <Combobox.Options
-                                  style={{ maxHeight: 240, overflowY: 'auto' }}
-                                >
-                                  {searchResults.map((item) => (
-                                    <Combobox.Option
-                                      key={item.id}
-                                      value={String(item.id)}
-                                    >
-                                      {formatOfferOption(item)}
-                                    </Combobox.Option>
-                                  ))}
-                                </Combobox.Options>
-                              </Combobox.Dropdown>
-                            </Combobox>
-                          </Popover.Dropdown>
-                        </Popover>
-                      </Group>
-
+                    <Group justify="space-between" align="center" wrap="wrap">
                       <Text size="sm" c={palette.textSecondary}>
                         Редактируется только этот поток
                       </Text>
+                      <Popover
+                        opened={addingOffer}
+                        onChange={(opened) => {
+                          if (!opened) {
+                            closeAddOfferPopover()
+                          } else {
+                            setAddingOffer(true)
+                          }
+                        }}
+                        position="bottom-end"
+                        closeOnEscape
+                      >
+                        <Popover.Target>
+                          <Button
+                            variant="light"
+                            color="brand"
+                            onClick={toggleAddOfferPopover}
+                          >
+                            Добавить оффер
+                          </Button>
+                        </Popover.Target>
+                        <Popover.Dropdown
+                          styles={{
+                            dropdown: { borderColor: palette.border },
+                          }}
+                        >
+                          <Combobox
+                            store={combobox}
+                            withinPortal={false}
+                            position="bottom-start"
+                            onOptionSubmit={handleOfferSelect}
+                          >
+                            <Combobox.Target>
+                              <TextInput
+                                label="ID оффера"
+                                placeholder="77"
+                                value={offerInput}
+                                onChange={(event) =>
+                                  handleOfferInputChange(
+                                    event.currentTarget.value,
+                                  )
+                                }
+                                onClick={() => {
+                                  if (searchResults.length > 0) {
+                                    combobox.openDropdown()
+                                  }
+                                }}
+                                onFocus={() => {
+                                  if (searchResults.length > 0) {
+                                    combobox.openDropdown()
+                                  }
+                                }}
+                                inputMode="numeric"
+                                rightSection={
+                                  searchLoading ? <Loader size="xs" /> : null
+                                }
+                                styles={{
+                                  label: { color: palette.textSecondary },
+                                }}
+                              />
+                            </Combobox.Target>
+
+                            <Combobox.Dropdown
+                              styles={{
+                                dropdown: { borderColor: palette.border },
+                              }}
+                            >
+                              <Combobox.Options
+                                style={{ maxHeight: 240, overflowY: 'auto' }}
+                              >
+                                {searchResults.map((item) => (
+                                  <Combobox.Option
+                                    key={item.id}
+                                    value={String(item.id)}
+                                  >
+                                    {formatOfferOption(item)}
+                                  </Combobox.Option>
+                                ))}
+                              </Combobox.Options>
+                            </Combobox.Dropdown>
+                          </Combobox>
+                        </Popover.Dropdown>
+                      </Popover>
+                    </Group>
 
                       {renderOfferTable()}
 
@@ -665,29 +677,21 @@ export function CampaignOffersPage() {
                           </Button>
                         </Group>
                       ) : null}
-                    </Stack>
-                  </Paper>
+                  </Stack>
                 ) : (
-                  <Paper
-                    key={stream.name}
-                    radius="md"
-                    p="lg"
-                    style={{ border: `1px solid ${palette.border}` }}
-                  >
-                    <Stack gap="xs">
-                      <Text fw={600} c={palette.text}>
-                        Поток {stream.name}
-                      </Text>
-                      <Text size="sm" c={palette.textSecondary}>
-                        Только просмотр
-                      </Text>
-                    </Stack>
-                  </Paper>
+                  <Stack key={stream.name} gap="xs">
+                    <Text fw={600} c={palette.text}>
+                      Поток {stream.name}
+                    </Text>
+                    <Text size="sm" c={palette.textSecondary}>
+                      Только просмотр
+                    </Text>
+                  </Stack>
                 ),
               )
             : null}
         </Stack>
-      </Paper>
+      </Box>
     </Box>
   )
 }

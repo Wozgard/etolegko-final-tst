@@ -2,7 +2,6 @@ import {
   Box,
   Button,
   Group,
-  Paper,
   Stack,
   Table,
   Text,
@@ -59,88 +58,84 @@ export function CampaignListPage() {
       px="md"
       style={{ backgroundColor: palette.pageBg }}
     >
-      <Paper
-        radius="lg"
-        p="xl"
-        maw={920}
-        mx="auto"
-        shadow="sm"
-        style={{ border: `1px solid ${palette.border}` }}
-      >
-        <Stack gap="lg">
-          <Group justify="space-between" align="flex-start" wrap="wrap">
-            <Stack gap={4}>
-              <Title order={1} c={palette.text}>
-                Кампании
-              </Title>
-              <Text size="sm" c={palette.textSecondary}>
-                Показаны только кампании с префиксом {CAMPAIGN_NAME_PREFIX}
-              </Text>
-            </Stack>
-            <Button color="brand" onClick={() => setModalOpen(true)}>
-              Новая кампания
-            </Button>
-          </Group>
-
-          {loadError ? (
-            <Text size="sm" c="red">
-              {loadError}
+      <Box maw={960} mx="auto">
+        <Group justify="space-between" align="flex-start" wrap="wrap">
+          <Stack gap={4}>
+            <Title order={1} c={palette.text}>
+              Кампании
+            </Title>
+            <Text size="sm" c={palette.textSecondary}>
+              Показаны только кампании с префиксом {CAMPAIGN_NAME_PREFIX}
             </Text>
-          ) : null}
+          </Stack>
+          <Button color="brand" onClick={() => setModalOpen(true)}>
+            Новая кампания
+          </Button>
+        </Group>
 
-          <Table
-            highlightOnHover
-            verticalSpacing="sm"
-            styles={{
-              table: { borderCollapse: 'separate', borderSpacing: 0 },
-              th: {
-                color: palette.textSecondary,
-                fontWeight: 500,
-                borderBottom: `1px solid ${palette.border}`,
-              },
-              td: {
-                color: palette.text,
-                borderBottom: `1px solid ${palette.border}`,
-              },
-            }}
-          >
-            <Table.Thead>
+        <Box
+          mt="lg"
+          style={{ borderBottom: `1px solid ${palette.border}` }}
+        />
+
+        {loadError ? (
+          <Text size="sm" c="red" mt="sm">
+            {loadError}
+          </Text>
+        ) : null}
+
+        <Table
+          highlightOnHover
+          verticalSpacing="sm"
+          styles={{
+            table: { borderCollapse: 'separate', borderSpacing: 0 },
+            th: {
+              color: palette.textSecondary,
+              fontWeight: 500,
+              borderBottom: `1px solid ${palette.border}`,
+            },
+            td: {
+              color: palette.text,
+              borderBottom: `1px solid ${palette.border}`,
+            },
+          }}
+        >
+          <Table.Thead>
+            <Table.Tr>
+              <Table.Th>ID</Table.Th>
+              <Table.Th>Название</Table.Th>
+            </Table.Tr>
+          </Table.Thead>
+          <Table.Tbody>
+            {loading ? (
               <Table.Tr>
-                <Table.Th>ID</Table.Th>
-                <Table.Th>Название</Table.Th>
+                <Table.Td colSpan={2}>
+                  <Text c={palette.textSecondary}>Загрузка…</Text>
+                </Table.Td>
               </Table.Tr>
-            </Table.Thead>
-            <Table.Tbody>
-              {loading ? (
-                <Table.Tr>
-                  <Table.Td colSpan={2}>
-                    <Text c={palette.textSecondary}>Загрузка…</Text>
-                  </Table.Td>
+            ) : campaigns.length === 0 ? (
+              <Table.Tr>
+                <Table.Td colSpan={2}>
+                  <Text c={palette.textSecondary}>
+                    Кампаний пока нет. Создайте первую.
+                  </Text>
+                </Table.Td>
+              </Table.Tr>
+            ) : (
+              campaigns.map((campaign) => (
+                <Table.Tr
+                  key={campaign.id}
+                  onClick={() => navigate(`/campaigns/${campaign.id}`)}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <Table.Td>{campaign.id}</Table.Td>
+                  <Table.Td>{campaign.name}</Table.Td>
                 </Table.Tr>
-              ) : campaigns.length === 0 ? (
-                <Table.Tr>
-                  <Table.Td colSpan={2}>
-                    <Text c={palette.textSecondary}>
-                      Кампаний пока нет. Создайте первую.
-                    </Text>
-                  </Table.Td>
-                </Table.Tr>
-              ) : (
-                campaigns.map((campaign) => (
-                  <Table.Tr
-                    key={campaign.id}
-                    onClick={() => navigate(`/campaigns/${campaign.id}`)}
-                    style={{ cursor: 'pointer' }}
-                  >
-                    <Table.Td>{campaign.id}</Table.Td>
-                    <Table.Td>{campaign.name}</Table.Td>
-                  </Table.Tr>
-                ))
-              )}
-            </Table.Tbody>
-          </Table>
-        </Stack>
-      </Paper>
+              ))
+            )}
+          </Table.Tbody>
+        </Table>
+      </Box>
 
       <CreateCampaignModal
         opened={modalOpen}

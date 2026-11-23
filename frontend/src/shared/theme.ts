@@ -3,7 +3,7 @@ import { createTheme } from '@mantine/core'
 export const CAMPAIGN_NAME_PREFIX = 'test_shvirev_'
 
 export const palette = {
-  pageBg: '#D8EDF4',
+  pageBg: '#FFFFFF',
   text: '#5A5058',
   textSecondary: '#918980',
   border: '#B8ADAC',
