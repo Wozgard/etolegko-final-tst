@@ -21,7 +21,7 @@ Mantine закрывает кнопки, таблицу, модалку и по�
 
 ## 2026-11-20 — пересчёт весов
 
-Ключ Keitaro лежит в `backend/.env` как `KEITARO_API_KEY`. Файл в `.gitignore`, в репозиторий не попадает. `Settings` читает его из этого файла, независимо от рабочей папки.
+Ключ Keitaro лежит в `backend/.env` как `KEITARO_API_KEY`. Файл в `.gitignore`, в репозиторий не попадает. `Settings` читает его из этого файла, независимо от рабочей папки. `backend/.env.example` повторяет остальные переменные и оставляет ключ пустым.
 
 Панель трекера — `KEITARO_ADMIN_URL` (`https://tlgk.host/admin`). Вызовы Admin API — `KEITARO_API_URL` (`https://tlgk.host/admin_api/v1`), заголовок `Api-Key`.
 
