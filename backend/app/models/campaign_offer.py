@@ -12,3 +12,4 @@ class CampaignOfferRow(Base):
     position: Mapped[int] = mapped_column(Integer, nullable=False)
     removed: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     pinned: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    pinned_share: Mapped[int] = mapped_column(Integer, nullable=False, default=0)

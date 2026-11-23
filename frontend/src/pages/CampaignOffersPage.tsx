@@ -113,8 +113,33 @@ function offerIdsAndSharesMatchBaseline(
     if (!base) {
       return false
     }
-    return base.share === o.share
+    return base.share === o.share && base.removed === o.removed
   })
+}
+
+function restoreRemovedPinnedShares(
+  before: EditableOffer[],
+  after: EditableOffer[],
+): EditableOffer[] {
+  const beforeById = new Map(before.map((o) => [o.id, o] as const))
+  return after.map((o) => {
+    if (!o.removed || !o.pinned) {
+      return o
+    }
+    const prev = beforeById.get(o.id)
+    if (!prev) {
+      return o
+    }
+    return { ...o, share: prev.share }
+  })
+}
+
+function redistributeWithRemovedPinnedMemory(
+  before: EditableOffer[],
+  mapped: EditableOffer[],
+): EditableOffer[] {
+  const next = sortOffers(distributeShares(mapped))
+  return restoreRemovedPinnedShares(before, next)
 }
 
 function formatOfferOption(offer: OfferListItem): string {
@@ -385,40 +410,38 @@ export function CampaignOffersPage() {
       return
     }
 
-    const next = sortOffers(
-      distributeShares([
-        ...offers,
-        {
-          id: found.id,
-          name: found.name,
-          share: 0,
-          pinned: false,
-          removed: false,
-        },
-      ]),
-    )
+    const next = redistributeWithRemovedPinnedMemory(offers, [
+      ...offers,
+      {
+        id: found.id,
+        name: found.name,
+        share: 0,
+        pinned: false,
+        removed: false,
+      },
+    ])
 
     applyOffersByShares(next)
     closeAddOfferPopover()
   }
 
   const handleRemove = (offerId: number) => {
-    const next = sortOffers(
-      distributeShares(
-        offers.map((o) =>
-          o.id === offerId ? { ...o, removed: true, share: 0 } : o,
-        ),
+    const next = redistributeWithRemovedPinnedMemory(
+      offers,
+      offers.map((o) =>
+        o.id === offerId
+          ? { ...o, removed: true, share: o.pinned ? o.share : 0 }
+          : o,
       ),
     )
     applyOffersByShares(next)
   }
 
   const handleBringBack = (offerId: number) => {
-    const next = sortOffers(
-      distributeShares(
-        offers.map((o) =>
-          o.id === offerId ? { ...o, removed: false } : o,
-        ),
+    const next = redistributeWithRemovedPinnedMemory(
+      offers,
+      offers.map((o) =>
+        o.id === offerId ? { ...o, removed: false } : o,
       ),
     )
     applyOffersByShares(next)
@@ -426,11 +449,10 @@ export function CampaignOffersPage() {
 
   const handlePin = (offerId: number) => {
     const before = snapshotIgnoringPin(offers)
-    const next = sortOffers(
-      distributeShares(
-        offers.map((o) =>
-          o.id === offerId ? { ...o, pinned: !o.pinned } : o,
-        ),
+    const next = redistributeWithRemovedPinnedMemory(
+      offers,
+      offers.map((o) =>
+        o.id === offerId ? { ...o, pinned: !o.pinned } : o,
       ),
     )
     const after = snapshotIgnoringPin(next)
@@ -460,7 +482,7 @@ export function CampaignOffersPage() {
         id: o.id,
         removed: o.removed,
         pinned: o.pinned,
-        ...(o.pinned && !o.removed ? { share: o.share } : {}),
+        ...(o.pinned ? { share: o.share } : {}),
       })),
     }
 
@@ -538,7 +560,7 @@ export function CampaignOffersPage() {
               </Table.Td>
               <Table.Td>
                 <Text c={offer.removed ? palette.textSecondary : palette.text}>
-                  {offer.share}%
+                  {offer.removed ? 0 : offer.share}%
                 </Text>
               </Table.Td>
               <Table.Td>

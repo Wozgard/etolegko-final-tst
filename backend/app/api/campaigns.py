@@ -1,6 +1,7 @@
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException, Response, status
+from sqlalchemy import inspect, text
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db, get_keitaro_client, get_settings
@@ -21,7 +22,24 @@ from app.services.keitaro_client import KeitaroClient
 
 router = APIRouter()
 
-Base.metadata.create_all(bind=engine)
+
+def _ensure_campaign_offers_schema() -> None:
+    Base.metadata.create_all(bind=engine)
+    inspector = inspect(engine)
+    if "campaign_offers" not in inspector.get_table_names():
+        return
+    column_names = {column["name"] for column in inspector.get_columns("campaign_offers")}
+    if "pinned_share" not in column_names:
+        with engine.begin() as connection:
+            connection.execute(
+                text(
+                    "ALTER TABLE campaign_offers "
+                    "ADD COLUMN pinned_share INTEGER NOT NULL DEFAULT 0"
+                )
+            )
+
+
+_ensure_campaign_offers_schema()
 
 
 @router.get("/offers", response_model=list[OfferListItem])

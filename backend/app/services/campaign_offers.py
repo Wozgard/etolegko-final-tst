@@ -29,6 +29,30 @@ def _keitaro_share_map(stream: dict[str, Any]) -> dict[int, int]:
     return result
 
 
+def _removed_response_share(row: CampaignOfferRow) -> int:
+    if row.pinned and row.removed:
+        return row.pinned_share
+    return 0
+
+
+def _pinned_share_from_item(
+    item: dict[str, Any],
+    *,
+    removed: bool,
+    pinned: bool,
+    current_shares: dict[int, int],
+) -> int:
+    if not pinned:
+        return 0
+    requested = item.get("share")
+    if isinstance(requested, int):
+        return requested
+    if not removed:
+        offer_id = item["id"]
+        return current_shares.get(offer_id, 0)
+    return 0
+
+
 def _load_rows(db: Session, campaign_id: int) -> list[CampaignOfferRow]:
     return (
         db.query(CampaignOfferRow)
@@ -69,10 +93,10 @@ def list_campaign_streams_response(
                 if not in_stream and not row.removed:
                     has_external_removal = True
                 if not in_stream:
-                    share = 0
+                    share = _removed_response_share(row) if row.removed else 0
                     response_removed = True
                 elif row.removed:
-                    share = 0
+                    share = _removed_response_share(row)
                     response_removed = True
                 else:
                     share = keitaro_shares[row.offer_id]
@@ -117,6 +141,9 @@ def list_campaign_streams_response(
                 ]
                 distributed = distribute_shares(weight_inputs)
                 for index, weighted in enumerate(distributed):
+                    entry = offer_rows[index]
+                    if entry["removed"] and entry["pinned"]:
+                        continue
                     offer_rows[index]["share"] = weighted.share
                 stream_out = {
                     key: value for key, value in stream.items() if key != "offers"
@@ -149,6 +176,7 @@ def list_campaign_streams_response(
                             position=position,
                             removed=False,
                             pinned=False,
+                            pinned_share=0,
                         )
                     )
                 db.commit()
@@ -178,18 +206,22 @@ def push_campaign_offers(
     current_shares = _keitaro_share_map(offer_stream)
 
     weight_inputs: list[OfferShare] = []
+    pinned_shares: list[int] = []
     for item in offers:
         offer_id = item["id"]
         removed = bool(item.get("removed", False))
         pinned = bool(item.get("pinned", False))
+        pinned_share = _pinned_share_from_item(
+            item,
+            removed=removed,
+            pinned=pinned,
+            current_shares=current_shares,
+        )
+        pinned_shares.append(pinned_share)
         if removed:
             share = 0
         elif pinned:
-            requested = item.get("share")
-            if isinstance(requested, int):
-                share = requested
-            else:
-                share = current_shares.get(offer_id, 0)
+            share = pinned_share
         else:
             share = 0
         weight_inputs.append(OfferShare(str(offer_id), share, pinned, removed))
@@ -205,6 +237,7 @@ def push_campaign_offers(
                 position=position,
                 removed=bool(item.get("removed", False)),
                 pinned=bool(item.get("pinned", False)),
+                pinned_share=pinned_shares[position],
             )
         )
     db.commit()
