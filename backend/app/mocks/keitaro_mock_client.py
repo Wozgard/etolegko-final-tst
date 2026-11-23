@@ -13,6 +13,11 @@ def _load_seed() -> dict[str, Any]:
         return json.load(handle)
 
 
+def load_remove_offer_ids() -> list[int]:
+    raw = _load_seed().get("remove_offers", [])
+    return [offer_id for offer_id in raw if isinstance(offer_id, int)]
+
+
 class MockKeitaroClient:
     def __init__(self, seed: dict[str, Any] | None = None) -> None:
         data = deepcopy(seed if seed is not None else _load_seed())
@@ -94,3 +99,30 @@ class MockKeitaroClient:
                     stream.update(deepcopy(payload))
                     return deepcopy(stream)
         return {"id": stream_id, **deepcopy(payload)}
+
+    def remove_offers_from_streams(self, offer_ids: list[int]) -> list[dict[str, int]]:
+        targets = set(offer_ids)
+        removed: list[dict[str, int]] = []
+        for campaign_id, streams in self._streams_by_campaign.items():
+            for stream in streams:
+                offers = stream.get("offers")
+                if not isinstance(offers, list):
+                    continue
+                stream_id = stream.get("id")
+                if not isinstance(stream_id, int):
+                    continue
+                kept: list[dict[str, Any]] = []
+                for entry in offers:
+                    offer_id = entry.get("offer_id")
+                    if isinstance(offer_id, int) and offer_id in targets:
+                        removed.append(
+                            {
+                                "campaign_id": campaign_id,
+                                "stream_id": stream_id,
+                                "offer_id": offer_id,
+                            }
+                        )
+                    else:
+                        kept.append(entry)
+                stream["offers"] = kept
+        return removed

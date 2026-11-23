@@ -32,9 +32,14 @@ type StreamOfferApi = {
   pinned: boolean
 }
 
+type ExternalChangeApi = {
+  previous_shares: Array<{ id: number; share: number }>
+}
+
 type StreamApi = {
   name: string
   offers?: StreamOfferApi[]
+  external_change?: ExternalChangeApi
 }
 
 type OfferListItem = {
@@ -55,6 +60,9 @@ type OfferSnapshot = {
 }
 
 const DIRTY_TABLE_BG = '#C5DFE9'
+
+const EXTERNAL_CHANGE_MESSAGE =
+  'Изменения произошли на стороне Keitaro, проценты по офферам пересчитаны, подтвердите изменения, чтобы отправить их в Keitaro'
 
 function cloneOffers(offers: EditableOffer[]): EditableOffer[] {
   return offers.map((o) => ({ ...o }))
@@ -92,6 +100,48 @@ function snapshotsEqual(a: OfferSnapshot[], b: OfferSnapshot[]): boolean {
   )
 }
 
+function offerIdsAndSharesMatchBaseline(
+  current: EditableOffer[],
+  baselineOffers: EditableOffer[],
+): boolean {
+  if (current.length !== baselineOffers.length) {
+    return false
+  }
+  const baselineById = new Map(baselineOffers.map((o) => [o.id, o] as const))
+  return current.every((o) => {
+    const base = baselineById.get(o.id)
+    if (!base) {
+      return false
+    }
+    return base.share === o.share && base.removed === o.removed
+  })
+}
+
+function restoreRemovedPinnedShares(
+  before: EditableOffer[],
+  after: EditableOffer[],
+): EditableOffer[] {
+  const beforeById = new Map(before.map((o) => [o.id, o] as const))
+  return after.map((o) => {
+    if (!o.removed || !o.pinned) {
+      return o
+    }
+    const prev = beforeById.get(o.id)
+    if (!prev) {
+      return o
+    }
+    return { ...o, share: prev.share }
+  })
+}
+
+function redistributeWithRemovedPinnedMemory(
+  before: EditableOffer[],
+  mapped: EditableOffer[],
+): EditableOffer[] {
+  const next = sortOffers(distributeShares(mapped))
+  return restoreRemovedPinnedShares(before, next)
+}
+
 function formatOfferOption(offer: OfferListItem): string {
   return `${offer.id} — ${offer.name}`
 }
@@ -114,6 +164,7 @@ export function CampaignOffersPage() {
   const [addingOffer, setAddingOffer] = useState(false)
   const [pushInFlight, setPushInFlight] = useState(false)
   const [backLinkHover, setBackLinkHover] = useState(false)
+  const [externalChangeMessage, setExternalChangeMessage] = useState(false)
 
   const combobox = useCombobox({
     onDropdownClose: () => combobox.resetSelectedOption(),
@@ -127,6 +178,8 @@ export function CampaignOffersPage() {
   const comboboxRef = useRef(combobox)
   comboboxRef.current = combobox
   const pushEpochRef = useRef(0)
+  const baselineRef = useRef(baseline)
+  baselineRef.current = baseline
 
   const applyOffers = useCallback((next: EditableOffer[], nextDirty: boolean) => {
     if (nextDirty) {
@@ -136,6 +189,14 @@ export function CampaignOffersPage() {
     setOffers(next)
     setDirty(nextDirty)
   }, [])
+
+  const applyOffersByShares = (next: EditableOffer[]) => {
+    const sharesDiffer = !offerIdsAndSharesMatchBaseline(
+      next,
+      baselineRef.current,
+    )
+    applyOffers(next, sharesDiffer || pushInFlight)
+  }
 
   const loadStreams = useCallback(async () => {
     setLoading(true)
@@ -161,29 +222,52 @@ export function CampaignOffersPage() {
         setOffers([])
         setBaseline([])
         setDirty(false)
+        setExternalChangeMessage(false)
         return
       }
 
       const streamList: StreamApi[] = await streamsResponse.json()
       let tableOffers: EditableOffer[] = []
+      let offerStream: StreamApi | undefined
 
       for (const stream of streamList) {
         if (isOfferStream(stream)) {
+          offerStream = stream
           tableOffers = toEditable(stream.offers!)
         }
       }
 
       const sorted = sortOffers(tableOffers)
+      let nextBaseline = cloneOffers(sorted)
+      let nextDirty = false
+      let nextExternalMessage = false
+
+      if (offerStream?.external_change) {
+        const previousShares = new Map(
+          offerStream.external_change.previous_shares.map(
+            (entry) => [entry.id, entry.share] as const,
+          ),
+        )
+        nextBaseline = sorted.map((offer) => ({
+          ...offer,
+          share: previousShares.get(offer.id) ?? offer.share,
+        }))
+        nextDirty = true
+        nextExternalMessage = true
+      }
+
       setStreams(streamList)
       setOffers(sorted)
-      setBaseline(cloneOffers(sorted))
-      setDirty(false)
+      setBaseline(nextBaseline)
+      setDirty(nextDirty)
+      setExternalChangeMessage(nextExternalMessage)
     } catch {
       setLoadError('Не удалось загрузить потоки кампании')
       setStreams([])
       setOffers([])
       setBaseline([])
       setDirty(false)
+      setExternalChangeMessage(false)
     } finally {
       setLoading(false)
     }
@@ -326,52 +410,49 @@ export function CampaignOffersPage() {
       return
     }
 
-    const next = sortOffers(
-      distributeShares([
-        ...offers,
-        {
-          id: found.id,
-          name: found.name,
-          share: 0,
-          pinned: false,
-          removed: false,
-        },
-      ]),
-    )
+    const next = redistributeWithRemovedPinnedMemory(offers, [
+      ...offers,
+      {
+        id: found.id,
+        name: found.name,
+        share: 0,
+        pinned: false,
+        removed: false,
+      },
+    ])
 
-    applyOffers(next, true)
+    applyOffersByShares(next)
     closeAddOfferPopover()
   }
 
   const handleRemove = (offerId: number) => {
-    const next = sortOffers(
-      distributeShares(
-        offers.map((o) =>
-          o.id === offerId ? { ...o, removed: true, share: 0 } : o,
-        ),
+    const next = redistributeWithRemovedPinnedMemory(
+      offers,
+      offers.map((o) =>
+        o.id === offerId
+          ? { ...o, removed: true, share: o.pinned ? o.share : 0 }
+          : o,
       ),
     )
-    applyOffers(next, true)
+    applyOffersByShares(next)
   }
 
   const handleBringBack = (offerId: number) => {
-    const next = sortOffers(
-      distributeShares(
-        offers.map((o) =>
-          o.id === offerId ? { ...o, removed: false } : o,
-        ),
+    const next = redistributeWithRemovedPinnedMemory(
+      offers,
+      offers.map((o) =>
+        o.id === offerId ? { ...o, removed: false } : o,
       ),
     )
-    applyOffers(next, true)
+    applyOffersByShares(next)
   }
 
   const handlePin = (offerId: number) => {
     const before = snapshotIgnoringPin(offers)
-    const next = sortOffers(
-      distributeShares(
-        offers.map((o) =>
-          o.id === offerId ? { ...o, pinned: !o.pinned } : o,
-        ),
+    const next = redistributeWithRemovedPinnedMemory(
+      offers,
+      offers.map((o) =>
+        o.id === offerId ? { ...o, pinned: !o.pinned } : o,
       ),
     )
     const after = snapshotIgnoringPin(next)
@@ -390,6 +471,7 @@ export function CampaignOffersPage() {
 
   const handleCancel = () => {
     applyOffers(cloneOffers(baseline), false)
+    setExternalChangeMessage(false)
     closeAddOfferPopover()
   }
 
@@ -400,11 +482,12 @@ export function CampaignOffersPage() {
         id: o.id,
         removed: o.removed,
         pinned: o.pinned,
-        ...(o.pinned && !o.removed ? { share: o.share } : {}),
+        ...(o.pinned ? { share: o.share } : {}),
       })),
     }
 
     setPushInFlight(true)
+    const offersAtPush = cloneOffers(offers)
 
     try {
       const response = await apiClient(`/campaigns/${campaignId}/push`, {
@@ -421,8 +504,11 @@ export function CampaignOffersPage() {
         return
       }
 
-      setBaseline(cloneOffers(offers))
+      const nextBaseline = cloneOffers(offersAtPush)
+      baselineRef.current = nextBaseline
+      setBaseline(nextBaseline)
       setDirty(false)
+      setExternalChangeMessage(false)
     } catch {
       if (epoch !== pushEpochRef.current) {
         return
@@ -474,7 +560,7 @@ export function CampaignOffersPage() {
               </Table.Td>
               <Table.Td>
                 <Text c={offer.removed ? palette.textSecondary : palette.text}>
-                  {offer.share}%
+                  {offer.removed ? 0 : offer.share}%
                 </Text>
               </Table.Td>
               <Table.Td>
@@ -659,7 +745,13 @@ export function CampaignOffersPage() {
                       </Popover>
                     </Group>
 
-                      {renderOfferTable()}
+                    {externalChangeMessage ? (
+                      <Text size="sm" c={palette.text}>
+                        {EXTERNAL_CHANGE_MESSAGE}
+                      </Text>
+                    ) : null}
+
+                    {renderOfferTable()}
 
                       {!pushInFlight && dirty ? (
                         <Group gap="sm">

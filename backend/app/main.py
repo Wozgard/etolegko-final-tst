@@ -1,9 +1,26 @@
+import sys
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.campaigns import router as campaigns_router
+from app.api.mock import router as mock_router
+from app.config import mock_database_path, settings
+from app.db import engine
 
-app = FastAPI()
+
+@asynccontextmanager
+async def _lifespan(_app: FastAPI):
+    yield
+    if settings.keitaro_mock and "pytest" not in sys.modules:
+        engine.dispose()
+        mock_db = mock_database_path()
+        if mock_db.is_file():
+            mock_db.unlink()
+
+
+app = FastAPI(lifespan=_lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -15,6 +32,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.include_router(campaigns_router)
+app.include_router(mock_router)
 
 
 @app.get("/health")

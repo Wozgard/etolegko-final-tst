@@ -201,7 +201,6 @@ def test_push_sends_shares_once_and_persists_removed_on_get(
     pushed = fake.updated_streams[0]
     assert pushed["stream_id"] == OFFER_STREAM_ID
     assert pushed["offers"] == [
-        {"offer_id": 77, "share": 0, "state": "active"},
         {"offer_id": 88, "share": 100, "state": "active"},
     ]
 
@@ -212,3 +211,44 @@ def test_push_sends_shares_once_and_persists_removed_on_get(
         {"id": 77, "name": "Alpha Offer", "share": 0, "removed": True, "pinned": False},
         {"id": 88, "name": "Beta Offer", "share": 100, "removed": False, "pinned": False},
     ]
+
+
+def test_get_marks_offer_removed_when_missing_from_keitaro_stream(
+    api_client: TestClient,
+) -> None:
+    fake = app.dependency_overrides[get_keitaro_client]()
+    assert isinstance(fake, EditorFakeKeitaroClient)
+    fake.streams_by_campaign = _base_streams(
+        offer_entries=[
+            {"offer_id": 77, "share": 50, "state": "active"},
+            {"offer_id": 88, "share": 50, "state": "active"},
+        ],
+    )
+
+    first_get = api_client.get(f"/campaigns/{CAMPAIGN_ID}/streams")
+    assert first_get.status_code == 200
+    offer = _offer_stream(first_get.json())
+    assert offer["offers"] == [
+        {"id": 77, "name": "Alpha Offer", "share": 50, "removed": False, "pinned": False},
+        {"id": 88, "name": "Beta Offer", "share": 50, "removed": False, "pinned": False},
+    ]
+
+    fake.set_stream_offers(
+        OFFER_STREAM_ID,
+        [{"offer_id": 88, "share": 50, "state": "active"}],
+    )
+
+    second_get = api_client.get(f"/campaigns/{CAMPAIGN_ID}/streams")
+    assert second_get.status_code == 200
+    assert fake.updated_streams == []
+    offer = _offer_stream(second_get.json())
+    assert offer["offers"] == [
+        {"id": 77, "name": "Alpha Offer", "share": 0, "removed": True, "pinned": False},
+        {"id": 88, "name": "Beta Offer", "share": 100, "removed": False, "pinned": False},
+    ]
+    external_change = offer.get("external_change")
+    assert external_change is not None
+    previous_shares = {
+        item["id"]: item["share"] for item in external_change["previous_shares"]
+    }
+    assert previous_shares[88] == 50
