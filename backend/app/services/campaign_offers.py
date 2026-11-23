@@ -63,21 +63,72 @@ def list_campaign_streams_response(
         offer_rows: list[dict[str, Any]] = []
 
         if stored:
+            has_external_removal = False
             for row in stored:
-                share = keitaro_shares.get(row.offer_id, 0)
+                in_stream = row.offer_id in keitaro_shares
+                if not in_stream and not row.removed:
+                    has_external_removal = True
+                if not in_stream:
+                    share = 0
+                    response_removed = True
+                elif row.removed:
+                    share = 0
+                    response_removed = True
+                else:
+                    share = keitaro_shares[row.offer_id]
+                    response_removed = False
                 offer_rows.append(
                     {
                         "id": row.offer_id,
                         "name": _offer_name(keitaro, row.offer_id),
                         "share": share,
-                        "removed": row.removed,
+                        "removed": response_removed,
                         "pinned": row.pinned,
                     }
                 )
+
+            stored_ids = {row.offer_id for row in stored}
+            for offer_id, share in keitaro_shares.items():
+                if offer_id in stored_ids:
+                    continue
+                offer_rows.append(
+                    {
+                        "id": offer_id,
+                        "name": _offer_name(keitaro, offer_id),
+                        "share": share,
+                        "removed": False,
+                        "pinned": False,
+                    }
+                )
+
+            if has_external_removal:
+                previous_shares = [
+                    {"id": entry["id"], "share": entry["share"]}
+                    for entry in offer_rows
+                ]
+                weight_inputs = [
+                    OfferShare(
+                        str(entry["id"]),
+                        entry["share"],
+                        entry["pinned"],
+                        entry["removed"],
+                    )
+                    for entry in offer_rows
+                ]
+                distributed = distribute_shares(weight_inputs)
+                for index, weighted in enumerate(distributed):
+                    offer_rows[index]["share"] = weighted.share
+                stream_out = {
+                    key: value for key, value in stream.items() if key != "offers"
+                }
+                stream_out["offers"] = offer_rows
+                stream_out["external_change"] = {"previous_shares": previous_shares}
+                result.append(stream_out)
+                continue
         else:
             raw_offers = stream.get("offers")
             if isinstance(raw_offers, list):
-                for entry in raw_offers:
+                for position, entry in enumerate(raw_offers):
                     offer_id = entry.get("offer_id")
                     share = entry.get("share")
                     if not isinstance(offer_id, int) or not isinstance(share, int):
@@ -91,6 +142,16 @@ def list_campaign_streams_response(
                             "pinned": False,
                         }
                     )
+                    db.add(
+                        CampaignOfferRow(
+                            campaign_id=campaign_id,
+                            offer_id=offer_id,
+                            position=position,
+                            removed=False,
+                            pinned=False,
+                        )
+                    )
+                db.commit()
 
         stream_out = {key: value for key, value in stream.items() if key != "offers"}
         stream_out["offers"] = offer_rows
@@ -150,10 +211,11 @@ def push_campaign_offers(
 
     keitaro_offers: list[dict[str, Any]] = []
     for index, weighted in enumerate(distributed):
-        offer_id = offers[index]["id"]
+        if bool(offers[index].get("removed", False)):
+            continue
         keitaro_offers.append(
             {
-                "offer_id": offer_id,
+                "offer_id": offers[index]["id"],
                 "share": weighted.share,
                 "state": "active",
             }

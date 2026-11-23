@@ -32,9 +32,14 @@ type StreamOfferApi = {
   pinned: boolean
 }
 
+type ExternalChangeApi = {
+  previous_shares: Array<{ id: number; share: number }>
+}
+
 type StreamApi = {
   name: string
   offers?: StreamOfferApi[]
+  external_change?: ExternalChangeApi
 }
 
 type OfferListItem = {
@@ -55,6 +60,9 @@ type OfferSnapshot = {
 }
 
 const DIRTY_TABLE_BG = '#C5DFE9'
+
+const EXTERNAL_CHANGE_MESSAGE =
+  'Изменения произошли на стороне Keitaro, проценты по офферам пересчитаны, подтвердите изменения, чтобы отправить их в Keitaro'
 
 function cloneOffers(offers: EditableOffer[]): EditableOffer[] {
   return offers.map((o) => ({ ...o }))
@@ -92,6 +100,23 @@ function snapshotsEqual(a: OfferSnapshot[], b: OfferSnapshot[]): boolean {
   )
 }
 
+function offerIdsAndSharesMatchBaseline(
+  current: EditableOffer[],
+  baselineOffers: EditableOffer[],
+): boolean {
+  if (current.length !== baselineOffers.length) {
+    return false
+  }
+  const baselineById = new Map(baselineOffers.map((o) => [o.id, o] as const))
+  return current.every((o) => {
+    const base = baselineById.get(o.id)
+    if (!base) {
+      return false
+    }
+    return base.share === o.share
+  })
+}
+
 function formatOfferOption(offer: OfferListItem): string {
   return `${offer.id} — ${offer.name}`
 }
@@ -114,6 +139,7 @@ export function CampaignOffersPage() {
   const [addingOffer, setAddingOffer] = useState(false)
   const [pushInFlight, setPushInFlight] = useState(false)
   const [backLinkHover, setBackLinkHover] = useState(false)
+  const [externalChangeMessage, setExternalChangeMessage] = useState(false)
 
   const combobox = useCombobox({
     onDropdownClose: () => combobox.resetSelectedOption(),
@@ -127,6 +153,8 @@ export function CampaignOffersPage() {
   const comboboxRef = useRef(combobox)
   comboboxRef.current = combobox
   const pushEpochRef = useRef(0)
+  const baselineRef = useRef(baseline)
+  baselineRef.current = baseline
 
   const applyOffers = useCallback((next: EditableOffer[], nextDirty: boolean) => {
     if (nextDirty) {
@@ -136,6 +164,14 @@ export function CampaignOffersPage() {
     setOffers(next)
     setDirty(nextDirty)
   }, [])
+
+  const applyOffersByShares = (next: EditableOffer[]) => {
+    const sharesDiffer = !offerIdsAndSharesMatchBaseline(
+      next,
+      baselineRef.current,
+    )
+    applyOffers(next, sharesDiffer || pushInFlight)
+  }
 
   const loadStreams = useCallback(async () => {
     setLoading(true)
@@ -161,29 +197,52 @@ export function CampaignOffersPage() {
         setOffers([])
         setBaseline([])
         setDirty(false)
+        setExternalChangeMessage(false)
         return
       }
 
       const streamList: StreamApi[] = await streamsResponse.json()
       let tableOffers: EditableOffer[] = []
+      let offerStream: StreamApi | undefined
 
       for (const stream of streamList) {
         if (isOfferStream(stream)) {
+          offerStream = stream
           tableOffers = toEditable(stream.offers!)
         }
       }
 
       const sorted = sortOffers(tableOffers)
+      let nextBaseline = cloneOffers(sorted)
+      let nextDirty = false
+      let nextExternalMessage = false
+
+      if (offerStream?.external_change) {
+        const previousShares = new Map(
+          offerStream.external_change.previous_shares.map(
+            (entry) => [entry.id, entry.share] as const,
+          ),
+        )
+        nextBaseline = sorted.map((offer) => ({
+          ...offer,
+          share: previousShares.get(offer.id) ?? offer.share,
+        }))
+        nextDirty = true
+        nextExternalMessage = true
+      }
+
       setStreams(streamList)
       setOffers(sorted)
-      setBaseline(cloneOffers(sorted))
-      setDirty(false)
+      setBaseline(nextBaseline)
+      setDirty(nextDirty)
+      setExternalChangeMessage(nextExternalMessage)
     } catch {
       setLoadError('Не удалось загрузить потоки кампании')
       setStreams([])
       setOffers([])
       setBaseline([])
       setDirty(false)
+      setExternalChangeMessage(false)
     } finally {
       setLoading(false)
     }
@@ -339,7 +398,7 @@ export function CampaignOffersPage() {
       ]),
     )
 
-    applyOffers(next, true)
+    applyOffersByShares(next)
     closeAddOfferPopover()
   }
 
@@ -351,7 +410,7 @@ export function CampaignOffersPage() {
         ),
       ),
     )
-    applyOffers(next, true)
+    applyOffersByShares(next)
   }
 
   const handleBringBack = (offerId: number) => {
@@ -362,7 +421,7 @@ export function CampaignOffersPage() {
         ),
       ),
     )
-    applyOffers(next, true)
+    applyOffersByShares(next)
   }
 
   const handlePin = (offerId: number) => {
@@ -390,6 +449,7 @@ export function CampaignOffersPage() {
 
   const handleCancel = () => {
     applyOffers(cloneOffers(baseline), false)
+    setExternalChangeMessage(false)
     closeAddOfferPopover()
   }
 
@@ -405,6 +465,7 @@ export function CampaignOffersPage() {
     }
 
     setPushInFlight(true)
+    const offersAtPush = cloneOffers(offers)
 
     try {
       const response = await apiClient(`/campaigns/${campaignId}/push`, {
@@ -421,8 +482,11 @@ export function CampaignOffersPage() {
         return
       }
 
-      setBaseline(cloneOffers(offers))
+      const nextBaseline = cloneOffers(offersAtPush)
+      baselineRef.current = nextBaseline
+      setBaseline(nextBaseline)
       setDirty(false)
+      setExternalChangeMessage(false)
     } catch {
       if (epoch !== pushEpochRef.current) {
         return
@@ -659,7 +723,13 @@ export function CampaignOffersPage() {
                       </Popover>
                     </Group>
 
-                      {renderOfferTable()}
+                    {externalChangeMessage ? (
+                      <Text size="sm" c={palette.text}>
+                        {EXTERNAL_CHANGE_MESSAGE}
+                      </Text>
+                    ) : null}
+
+                    {renderOfferTable()}
 
                       {!pushInFlight && dirty ? (
                         <Group gap="sm">

@@ -18,360 +18,140 @@
   },
   "offers": [
     {
+      "id": 10,
+      "name": "Alfa 1 Offer"
+    },
+    {
       "id": 11,
-      "name": "Offer 11"
+      "name": "Beta 1 Offer"
     },
     {
       "id": 12,
-      "name": "Offer 12"
+      "name": "Gamma 1 Offer"
     },
     {
       "id": 13,
-      "name": "Offer 13"
+      "name": "Delta 1 Offer"
     },
     {
       "id": 14,
-      "name": "Offer 14"
+      "name": "Epsilon 1 Offer"
     },
     {
       "id": 15,
-      "name": "Offer 15"
+      "name": "Zeta 1 Offer"
     },
     {
       "id": 16,
-      "name": "Offer 16"
+      "name": "Eta 1 Offer"
     },
     {
       "id": 17,
-      "name": "Offer 17"
+      "name": "Theta 1 Offer"
     },
     {
       "id": 18,
-      "name": "Offer 18"
+      "name": "Iota 1 Offer"
     },
     {
       "id": 19,
-      "name": "Offer 19"
+      "name": "Kappa 1 Offer"
     },
     {
       "id": 20,
-      "name": "Offer 20"
+      "name": "Alfa 2 Offer"
     },
     {
       "id": 21,
-      "name": "Offer 21"
+      "name": "Beta 2 Offer"
     },
     {
       "id": 22,
-      "name": "Offer 22"
+      "name": "Gamma 2 Offer"
     },
     {
       "id": 23,
-      "name": "Offer 23"
+      "name": "Delta 2 Offer"
     },
     {
       "id": 24,
-      "name": "Offer 24"
+      "name": "Epsilon 2 Offer"
     },
     {
       "id": 25,
-      "name": "Offer 25"
+      "name": "Zeta 2 Offer"
     },
     {
       "id": 26,
-      "name": "Offer 26"
+      "name": "Eta 2 Offer"
     },
     {
       "id": 27,
-      "name": "Offer 27"
+      "name": "Theta 2 Offer"
     },
     {
       "id": 28,
-      "name": "Offer 28"
+      "name": "Iota 2 Offer"
     },
     {
       "id": 29,
-      "name": "Offer 29"
+      "name": "Kappa 2 Offer"
     },
     {
       "id": 30,
-      "name": "Offer 30"
+      "name": "Alfa 3 Offer"
     },
     {
-      "id": 31,
-      "name": "Offer 31"
+      "id": 401,
+      "name": "Unauthorized Offer"
     },
     {
-      "id": 32,
-      "name": "Offer 32"
+      "id": 402,
+      "name": "Payment Required Offer"
     },
     {
-      "id": 33,
-      "name": "Offer 33"
+      "id": 403,
+      "name": "Forbidden Offer"
     },
     {
-      "id": 34,
-      "name": "Offer 34"
+      "id": 404,
+      "name": "Not Found Offer"
     },
     {
-      "id": 35,
-      "name": "Offer 35"
+      "id": 405,
+      "name": "Method Not Allowed Offer"
     },
     {
-      "id": 36,
-      "name": "Offer 36"
+      "id": 408,
+      "name": "Request Timeout Offer"
     },
     {
-      "id": 37,
-      "name": "Offer 37"
+      "id": 409,
+      "name": "Conflict Offer"
     },
     {
-      "id": 38,
-      "name": "Offer 38"
+      "id": 410,
+      "name": "Gone Offer"
     },
     {
-      "id": 39,
-      "name": "Offer 39"
+      "id": 429,
+      "name": "Too Many Requests Offer"
     },
     {
-      "id": 40,
-      "name": "Offer 40"
+      "id": 500,
+      "name": "Internal Server Error Offer"
     },
     {
-      "id": 41,
-      "name": "Offer 41"
+      "id": 502,
+      "name": "Bad Gateway Offer"
     },
     {
-      "id": 42,
-      "name": "Offer 42"
+      "id": 503,
+      "name": "Service Unavailable Offer"
     },
     {
-      "id": 43,
-      "name": "Offer 43"
-    },
-    {
-      "id": 44,
-      "name": "Offer 44"
-    },
-    {
-      "id": 45,
-      "name": "Offer 45"
-    },
-    {
-      "id": 46,
-      "name": "Offer 46"
-    },
-    {
-      "id": 47,
-      "name": "Offer 47"
-    },
-    {
-      "id": 48,
-      "name": "Offer 48"
-    },
-    {
-      "id": 49,
-      "name": "Offer 49"
-    },
-    {
-      "id": 50,
-      "name": "Offer 50"
-    },
-    {
-      "id": 51,
-      "name": "Offer 51"
-    },
-    {
-      "id": 52,
-      "name": "Offer 52"
-    },
-    {
-      "id": 53,
-      "name": "Offer 53"
-    },
-    {
-      "id": 54,
-      "name": "Offer 54"
-    },
-    {
-      "id": 55,
-      "name": "Offer 55"
-    },
-    {
-      "id": 56,
-      "name": "Offer 56"
-    },
-    {
-      "id": 57,
-      "name": "Offer 57"
-    },
-    {
-      "id": 58,
-      "name": "Offer 58"
-    },
-    {
-      "id": 59,
-      "name": "Offer 59"
-    },
-    {
-      "id": 60,
-      "name": "Offer 60"
-    },
-    {
-      "id": 61,
-      "name": "Offer 61"
-    },
-    {
-      "id": 62,
-      "name": "Offer 62"
-    },
-    {
-      "id": 63,
-      "name": "Offer 63"
-    },
-    {
-      "id": 64,
-      "name": "Offer 64"
-    },
-    {
-      "id": 65,
-      "name": "Offer 65"
-    },
-    {
-      "id": 66,
-      "name": "Offer 66"
-    },
-    {
-      "id": 67,
-      "name": "Offer 67"
-    },
-    {
-      "id": 68,
-      "name": "Offer 68"
-    },
-    {
-      "id": 69,
-      "name": "Offer 69"
-    },
-    {
-      "id": 70,
-      "name": "Offer 70"
-    },
-    {
-      "id": 71,
-      "name": "Offer 71"
-    },
-    {
-      "id": 72,
-      "name": "Offer 72"
-    },
-    {
-      "id": 73,
-      "name": "Offer 73"
-    },
-    {
-      "id": 74,
-      "name": "Offer 74"
-    },
-    {
-      "id": 75,
-      "name": "Offer 75"
-    },
-    {
-      "id": 76,
-      "name": "Offer 76"
-    },
-    {
-      "id": 77,
-      "name": "Alpha Offer"
-    },
-    {
-      "id": 78,
-      "name": "Offer 78"
-    },
-    {
-      "id": 79,
-      "name": "Offer 79"
-    },
-    {
-      "id": 80,
-      "name": "Offer 80"
-    },
-    {
-      "id": 81,
-      "name": "Offer 81"
-    },
-    {
-      "id": 82,
-      "name": "Offer 82"
-    },
-    {
-      "id": 83,
-      "name": "Offer 83"
-    },
-    {
-      "id": 84,
-      "name": "Offer 84"
-    },
-    {
-      "id": 85,
-      "name": "Offer 85"
-    },
-    {
-      "id": 86,
-      "name": "Offer 86"
-    },
-    {
-      "id": 87,
-      "name": "Offer 87"
-    },
-    {
-      "id": 88,
-      "name": "Beta Offer"
-    },
-    {
-      "id": 89,
-      "name": "Offer 89"
-    },
-    {
-      "id": 90,
-      "name": "Offer 90"
-    },
-    {
-      "id": 91,
-      "name": "Offer 91"
-    },
-    {
-      "id": 92,
-      "name": "Offer 92"
-    },
-    {
-      "id": 93,
-      "name": "Offer 93"
-    },
-    {
-      "id": 94,
-      "name": "Offer 94"
-    },
-    {
-      "id": 95,
-      "name": "Offer 95"
-    },
-    {
-      "id": 96,
-      "name": "Offer 96"
-    },
-    {
-      "id": 97,
-      "name": "Offer 97"
-    },
-    {
-      "id": 98,
-      "name": "Offer 98"
-    },
-    {
-      "id": 99,
-      "name": "Gamma Offer"
+      "id": 504,
+      "name": "Gateway Timeout Offer"
     }
   ],
   "campaigns": [
@@ -409,8 +189,18 @@
         "action_type": "http",
         "offers": [
           {
-            "offer_id": 77,
-            "share": 100,
+            "offer_id": 10,
+            "share": 50,
+            "state": "active"
+          },
+          {
+            "offer_id": 11,
+            "share": 25,
+            "state": "active"
+          },
+          {
+            "offer_id": 404,
+            "share": 25,
             "state": "active"
           }
         ]
@@ -436,12 +226,27 @@
         "action_type": "http",
         "offers": [
           {
-            "offer_id": 88,
+            "offer_id": 20,
             "share": 100,
             "state": "active"
           }
         ]
       }
     ]
-  }
+  },
+  "remove_offers": [
+    401,
+    402,
+    403,
+    404,
+    405,
+    408,
+    409,
+    410,
+    429,
+    500,
+    502,
+    503,
+    504
+  ]
 }

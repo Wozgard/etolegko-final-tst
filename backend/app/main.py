@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.campaigns import router as campaigns_router
+from app.api.mock import router as mock_router
 
 app = FastAPI()
 app.add_middleware(
@@ -15,6 +16,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.include_router(campaigns_router)
+app.include_router(mock_router)
 
 
 @app.get("/health")
