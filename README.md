@@ -38,6 +38,8 @@ npm test
 
 Тесты бэкенда ходят в фейковый клиент и в трекер не обращаются.
 
+### Тест удаления оффера из Keitaro на мок данных
+
 Отдельно, уже на запущенном интерфейсе с `KEITARO_MOCK=true`, проверяется удаление оффера на стороне Keitaro. Команда из каталога `backend`:
 
 ```powershell
@@ -62,4 +64,4 @@ npm test
 | `KEITARO_SOURCE_NAME`, `KEITARO_SOURCE_ID` | Источник трафика. |
 | `KEITARO_MOCK` | `true` — не ходить в трекер, читать `backend/app/mocks/keitaro.json`. `false` — живой API, тогда нужен ключ. |
 
-База SQLite создаётся сама: `sqlite:///./app.db` в каталоге `backend`.
+База SQLite создаётся сама в каталоге `backend`: при `KEITARO_MOCK=true` — `app.mock.db`, иначе — `app.db`. Файл мока удаляется при остановке бэкенда; обычная база остаётся.
